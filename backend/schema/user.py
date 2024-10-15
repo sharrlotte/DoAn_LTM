@@ -10,6 +10,6 @@ class User(db.Model):
         self.id = id
         self.email = email
         self.name = name
-
-    def __repr__(self):
-        return f"<{self.name, self.id,self.email}>"
+    
+    def as_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}

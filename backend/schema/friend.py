@@ -7,7 +7,6 @@ class Friend(db.Model):
     user_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)
     friend_id = db.Column(db.String, nullable=False)
 
-    def __repr__(self):
-        return f"<Friend(user_id={self.user_id}, friend_id={self.friend_id})>"
-
+    def as_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
