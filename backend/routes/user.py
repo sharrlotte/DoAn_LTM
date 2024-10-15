@@ -6,12 +6,24 @@ import requests
 import urllib.parse
 import os
 from schema.user import User
-from extentions import db
+from extentions import db, login_manager
+from flask_login import (
+    login_required,
+    login_user,
+    logout_user,
+    current_user
+)
+
 
 CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
 user_bp = Blueprint('users', __name__)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(user_id)
+
 
 @user_bp.route('/')
 def home():
@@ -21,8 +33,6 @@ def home():
 def videocall_login():
     redirect_uri = 'http://localhost:8080/callback'
     scope = 'openid email profile'
-    
-    
 
     google_auth_url = (
         "https://accounts.google.com/o/oauth2/v2/auth?"
@@ -63,12 +73,28 @@ def callback():
     user_id = idinfo['sub']
     email = idinfo['email']
     name = idinfo['name']
+    avatar = idinfo['picture']
 
-    user = User(id=user_id, email=email, name=name)
+    user = User(id=user_id, email=email, name=name, avatar=avatar)
+    
     db.session.merge(user)  
     db.session.commit()
+    
+    login_user(user, force=True)
 
-    return jsonify(user.__repr__()), 200
+    return user.as_dict(), 200
+
+@user_bp.route('/auth/logout', methods=['GET'])
+@login_required
+def logout():
+    logout_user()
+    
+
+@user_bp.route('/auth/session', methods=['GET'])
+@login_required
+def session():
+    return jsonify({'id': current_user.id, "name": current_user.name }), 200
+    
 
 @user_bp.route('/users', methods=['GET'])
 def find_user():

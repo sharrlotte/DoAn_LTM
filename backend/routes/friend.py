@@ -3,10 +3,19 @@ from flask import  request, jsonify
 from schema.friend import Friend
 from extentions import db
 
+
+from flask_login import (
+    current_user,
+)
+
 friends_bp = Blueprint('friends', __name__)
 
 @friends_bp.route('/friends', methods=['POST'])
 def add_friend():
+    user = current_user
+    
+    print(user)
+    
     user_id = request.json.get('user_id')
     friend_id = request.json.get('friend_id')
     

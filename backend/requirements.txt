@@ -6,3 +6,7 @@ Flask-SQLAlchemy
 flask_migrate
 python-dotenv
 psycopg2-binary
+Flask-SocketIO
+gunicorn
+eventlet
+Flask-Login
