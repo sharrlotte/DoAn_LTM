@@ -6,7 +6,7 @@ WORKDIR /app
 
 # Copy the requirements file to the working directory
 COPY requirements.txt .
-COPY dev.env .
+COPY . .
 
 # Install the required Python packages in a temporary directory
 RUN --mount=type=cache,target=/root/.cache/pip pip3 install --no-cache-dir --target=/app/dependencies -r requirements.txt
