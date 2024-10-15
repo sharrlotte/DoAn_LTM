@@ -9,6 +9,9 @@ friends_bp = Blueprint('friends', __name__)
 def add_friend():
     user_id = request.json.get('user_id')
     friend_id = request.json.get('friend_id')
+    
+    if user_id == friend_id: 
+        return jsonify({'error': "Why you are so lonely, user_id and friend_id can be the same"})
 
     if not user_id or not friend_id:
         return jsonify({'error': 'user_id and friend_id are required'}), 400
