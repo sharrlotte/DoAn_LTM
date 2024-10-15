@@ -17,7 +17,7 @@ user_bp = Blueprint('users', __name__)
 def home():
     return "Welcome to the Google Login API"
 
-@user_bp.route('/videocall/login')
+@user_bp.route('/auth/login')
 def videocall_login():
     redirect_uri = 'http://localhost:8080/callback'
     scope = 'openid email profile'
@@ -70,7 +70,7 @@ def callback():
 
     return jsonify(user.__repr__()), 200
 
-@user_bp.route('/find_user', methods=['GET'])
+@user_bp.route('/users', methods=['GET'])
 def find_user():
     name = request.args.get('name')
     page = request.args.get('page', 1, type=int)

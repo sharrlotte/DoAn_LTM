@@ -5,7 +5,7 @@ from extentions import db
 
 friends_bp = Blueprint('friends', __name__)
 
-@friends_bp.route('/add_friend', methods=['POST'])
+@friends_bp.route('/friends', methods=['POST'])
 def add_friend():
     user_id = request.json.get('user_id')
     friend_id = request.json.get('friend_id')
