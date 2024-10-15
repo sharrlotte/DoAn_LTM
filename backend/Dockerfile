@@ -1,22 +1,31 @@
-FROM python:3.7-alpine
+# Stage 1: Build stage
+FROM python:3.11-slim AS builder
 
-EXPOSE 8000
+# Set the working directory in the container
+WORKDIR /app
 
-RUN apk update && apk add postgresql-dev gcc python3-dev musl-dev
-#RUN apt-get update && apt-get install -y libpq-dev gcc python3-dev musl-dev
+# Copy the requirements file to the working directory
+COPY requirements.txt .
+COPY dev.env .
 
-ADD ./project /code
-WORKDIR /code
+# Install the required Python packages in a temporary directory
+RUN --mount=type=cache,target=/root/.cache/pip pip3 install --no-cache-dir --target=/app/dependencies -r requirements.txt
 
-RUN pip install \
-    djangorestframework==3.9.0 \
-    django-rest-swagger==2.2.0 \
-    django-extensions==2.1.4 \
-    markdown==3.0.1 \
-    psycopg2-binary==2.7.6.1 \
-    django-filter==2.0.0 \ 
-    faker==1.0.1 \ 
-    factory-boy==2.11.1
 
-CMD  python init.py && python manage.py runserver 0.0.0.0:8000
-#CMD python entrypoint.py
+# Stage 2: Final stage
+FROM python:3.11-slim
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy only the dependencies from the builder stage
+COPY --from=builder /app/dependencies /usr/local/lib/python3.11/site-packages/
+
+# Copy the rest of your application code to the working directory
+COPY . .
+
+# Expose the port that the app runs on
+EXPOSE 8080
+
+# Define the command to run your application
+CMD ["python", "app.py"]
