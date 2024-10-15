@@ -1,10 +1,8 @@
 import { AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCaption, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar } from "@radix-ui/react-avatar";
 import { MoreHorizontal } from "lucide-react";
 import Link from "next/link";
@@ -115,14 +113,19 @@ export default function Home() {
           {invoices.map((invoice) => (
             <TableRow key={invoice.name} className="">
               <TableCell className="font-medium">
-                <Avatar className="h-16 w-16">
-                  <AvatarImage className="rounded-full h-16 w-16" src={invoice.avatar} />
+                <Avatar className="h-12 w-12">
+                  <AvatarImage className="rounded-full h-12 w-12" src={invoice.avatar} />
                   <AvatarFallback>CN</AvatarFallback>
                 </Avatar>
               </TableCell>
               <TableCell>{invoice.name}</TableCell>
               <TableCell className="text-right gap-5">
-                <Button className="bg-green-500">Gọi</Button>
+                <Button className="bg-green-500">
+                  <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="videocall.svg" fill="none" viewBox="0 0 20 20">
+                    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
+                  </svg>
+                  Gọi
+                </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="h-8 w-8 p-0">
