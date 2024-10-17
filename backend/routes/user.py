@@ -6,7 +6,7 @@ import requests
 import urllib.parse
 import os
 from schema.user import User
-from extentions import db, login_manager
+from shared import db, login_manager
 from flask_login import (
     login_required,
     login_user,

@@ -1,5 +1,5 @@
 from flask import Blueprint
-from extentions import db
+from shared import db
 
 class Friend(db.Model):
     __tablename__ = 'friends'

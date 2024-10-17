@@ -1,3 +1,4 @@
+flask_session
 Flask
 Flask-Cors
 google-auth

@@ -1,4 +1,4 @@
-from extentions import db
+from shared import db
 
 class User(db.Model):
     __tablename__ = 'users'

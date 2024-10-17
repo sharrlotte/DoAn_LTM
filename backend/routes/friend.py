@@ -1,7 +1,7 @@
 from flask import Blueprint
 from flask import  request, jsonify
 from schema.friend import Friend
-from extentions import db
+from shared import db
 
 
 from flask_login import (
