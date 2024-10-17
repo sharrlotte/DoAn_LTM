@@ -69,7 +69,7 @@ def callback():
     tokens = response.json()
     id_token_received = tokens.get('id_token')
 
-    idinfo = id_token.verify_oauth2_token(id_token_received, google_requests.Request(), CLIENT_ID)
+    idinfo = id_token.verify_oauth2_token(id_token_received, google_requests.Request(), CLIENT_ID, clock_skew_in_seconds=10)
     user_id = idinfo['sub']
     email = idinfo['email']
     name = idinfo['name']
