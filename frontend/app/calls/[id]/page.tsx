@@ -27,19 +27,13 @@ export default function Page({ params: { id } }: Props) {
 	return <VideoCall id={id} />;
 }
 
-function VideoCall({ id }: { id: string }) {
+function VideoCall({ id: roomId }: { id: string }) {
 	const [isConnected, setIsConnected] = useState(false);
 	const [isAudioMuted, setAudioMuted] = useState(false);
 	const [isVideoMuted, setVideoMuted] = useState(false);
-	const [myId, setMyId] = useState('');
-	const [peers, setPeers] = useState<Record<string, Peer>>({});
+	const peerRef = useRef<Record<string, Peer>>({});
 
 	const videoRef = useRef<HTMLVideoElement>(null);
-	const videoElement = videoRef.current;
-
-	useEffect(() => {
-		socket.connect();
-	}, []);
 
 	useEffect(() => {
 		if (socket.connected) {
@@ -75,42 +69,43 @@ function VideoCall({ id }: { id: string }) {
 			socket.off('connect', onConnect);
 			socket.off('disconnect', onDisconnect);
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	const startCamera = useCallback(() => {
-		if (videoElement) {
+		const element = videoRef.current;
+		if (element) {
 			navigator.mediaDevices
 				.getUserMedia(mediaConstraints)
 				.then((stream) => {
-					videoElement.srcObject = stream;
+					element.srcObject = stream;
 
 					setAudioState(stream, isAudioMuted);
 					setVideoState(stream, isVideoMuted);
 
-					videoElement.play();
+					socket.connect();
 				})
 				.catch((e) => {
 					window.alert('getUserMedia Error! ' + e);
 					alert('Error! Unable to access camera or mic! ');
 				});
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [videoElement]);
+	}, []);
 
 	useEffect(() => {
 		startCamera();
-	}, [startCamera]);
+	}, []);
 
 	useEffect(() => {
 		return () => {
-			if (videoElement) {
-				(videoElement.srcObject as MediaStream)?.getTracks().forEach((track) => {
+			const element = videoRef.current;
+
+			if (element) {
+				(element.srcObject as MediaStream)?.getTracks().forEach((track) => {
 					track.stop();
 				});
 			}
 		};
-	}, [videoElement]);
+	}, []);
 
 	function setVideoState(stream: MediaStream, isMuted: boolean) {
 		stream.getVideoTracks().forEach((track) => {
@@ -132,44 +127,42 @@ function VideoCall({ id }: { id: string }) {
 
 	useEffect(() => {
 		socket.on('connect', () => {
-			socket.emit('join-room', { room_id: id });
+			socket.emit('join-room', { room_id: roomId });
 		});
 
 		socket.on('user-connect', (data) => {
 			const id = data['sid'];
 			const name = data['name'];
 
-			setPeers((prev) => ({ ...prev, id: { connection: undefined, name, id } }));
+			peerRef.current[id] = { connection: undefined, name: '', id };
 		});
 
 		socket.on('user-disconnect', (data) => {
 			const id = data['sid'];
 			closeConnection(id);
-			setPeers((prev) => Object.fromEntries(Object.entries(prev).filter(([peerId]) => peerId !== id)));
+			peerRef.current = Object.fromEntries(Object.entries(peerRef.current).filter(([peerId]) => peerId !== id));
 		});
 
 		socket.on('user-list', (data) => {
-			setMyId(data['my_id']);
-
 			if ('list' in data) {
 				// not the first to connect to room, existing user list recieved
 				const list = data['list'];
 
 				// add existing users to user list
-				for (const id in list) {
+				for (const id of Object.keys(list)) {
 					const name = list[id];
-					delete peers[id];
+					delete peerRef.current[id];
 
-					setPeers((prev) => ({ ...prev, id: { connection: undefined, name, id } }));
+					peerRef.current[id] = { connection: undefined, name: '', id };
+
+					start_webrtc(peerRef.current);
 				}
-				start_webrtc();
 			}
 		});
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
+	}, [start_webrtc]);
 
 	function closeConnection(id: string) {
-		const connection = peers[id]?.connection;
+		const connection = peerRef.current[id]?.connection;
 
 		if (connection) {
 			connection.onicecandidate = null;
@@ -190,107 +183,144 @@ function VideoCall({ id }: { id: string }) {
 		socket.emit('data', data);
 	}
 
-	function start_webrtc() {
-		// send offer to all other members
-		for (const id in peers) {
+	function start_webrtc(peers: Record<string, Peer>) {
+		for (const id of Object.keys(peers)) {
 			invite(id);
 		}
 	}
 
 	function invite(id: string) {
-		if (peers[id]) {
-			window.alert('[Not supposed to happen!] Attempting to start a connection that already exists!');
-		} else if (id === myId) {
-			window.alert('[Not supposed to happen!] Trying to connect to self!');
-		} else {
-			window.alert(`Creating peer connection for <${id}> ...`);
-			createPeerConnection(id);
-
-			const videoElement = videoRef.current;
-			if (videoElement) {
-				const stream = videoElement.srcObject as MediaStream;
-
-				stream?.getTracks().forEach((track) => {
-					peers[id]?.connection?.addTrack(track, stream);
-				});
-			}
+		if (id === socket.id) {
+			return;
 		}
+
+		if (peerRef.current[id]?.connection) {
+			return;
+		}
+
+		createPeerConnection(id);
+
+		const stream = videoRef.current?.srcObject as MediaStream;
+
+		stream.getTracks().forEach((track) => {
+			peerRef.current[id].connection?.addTrack(track, stream);
+		});
 	}
 
 	function createPeerConnection(id: string) {
 		const connection = new RTCPeerConnection(PC_CONFIG);
 
-		setPeers((prev) => ({ ...prev, id: { connection, name: '', id } }));
+		peerRef.current[id] = { connection, id: id, name: id };
 
 		connection.onicecandidate = (event) => {
+			console.log({ ice: event });
 			handleICECandidateEvent(event, id);
 		};
 		connection.ontrack = (event) => {
-			handconstrackEvent(event);
+			console.log({ track: event });
+			handleTrackEvent(event, id);
 		};
 		connection.onnegotiationneeded = () => {
+			console.log({ neg: id });
 			handleNegotiationNeededEvent(id);
 		};
 	}
 
 	function handleNegotiationNeededEvent(id: string) {
-		peers[id]?.connection
-			?.createOffer()
+		var connection = peerRef.current[id].connection;
+		if (!connection) {
+			throw 'WTF';
+		}
+
+		connection
+			.createOffer()
 			.then((offer) => {
-				return peers[id].connection?.setLocalDescription(offer);
+				if (!connection) {
+					throw 'WTF';
+				}
+				return connection.setLocalDescription(offer);
 			})
 			.then(() => {
+				if (!connection) {
+					throw 'WTF';
+				}
 				sendViaServer({
-					sender_id: myId,
+					sender_id: socket.id,
 					target_id: id,
 					type: 'offer',
-					sdp: peers[id]?.connection?.localDescription,
+					sdp: connection.localDescription,
 				});
-			})
-			.catch(window.alert);
+			});
 	}
 
 	function handleOfferMsg(msg: { sender_id: string; sdp: RTCSessionDescriptionInit }) {
-		const id = msg['sender_id'];
+		const id = msg.sender_id;
 
 		createPeerConnection(id);
-		const desc = new RTCSessionDescription(msg['sdp']);
-		peers[id]?.connection
-			?.setRemoteDescription(desc)
+
+		const desc = new RTCSessionDescription(msg.sdp);
+		var connection = peerRef.current[id].connection;
+
+		if (!connection) {
+			throw 'WTF';
+		}
+
+		connection
+			.setRemoteDescription(desc)
 			.then(() => {
 				const stream = videoRef.current?.srcObject as MediaStream;
 
-				stream?.getTracks().forEach((track) => {
-					peers[id]?.connection?.addTrack(track, stream);
+				stream.getTracks().forEach((track) => {
+					if (!connection) {
+						throw 'WTF';
+					}
+
+					connection.addTrack(track, stream);
 				});
 			})
 			.then(() => {
-				return peers[id]?.connection?.createAnswer();
+				if (!connection) {
+					throw 'WTF';
+				}
+
+				return connection.createAnswer();
 			})
 			.then((answer) => {
-				return peers[id]?.connection?.setLocalDescription(answer);
+				if (!connection) {
+					throw 'WTF';
+				}
+
+				return connection.setLocalDescription(answer);
 			})
 			.then(() => {
+				if (!connection) {
+					throw 'WTF';
+				}
+
 				sendViaServer({
-					sender_id: myId,
+					sender_id: socket.id,
 					target_id: id,
 					type: 'answer',
-					sdp: peers[id]?.connection?.localDescription,
+					sdp: connection.localDescription,
 				});
-			})
-			.catch(window.alert);
+			});
 	}
 
 	function handleAnswerMsg(msg: { sender_id: string; sdp: RTCSessionDescriptionInit }) {
 		const id = msg['sender_id'];
 		const desc = new RTCSessionDescription(msg['sdp']);
-		peers[id]?.connection?.setRemoteDescription(desc);
+		var connection = peerRef.current[id].connection;
+		if (!connection) {
+			throw 'WTF';
+		}
+
+		connection.setRemoteDescription(desc);
 	}
 
 	function handleICECandidateEvent(event: { candidate: unknown }, id: string) {
 		if (event.candidate) {
 			sendViaServer({
-				sender_id: myId,
+				sender_id: socket.id,
 				target_id: id,
 				type: 'new-ice-candidate',
 				candidate: event.candidate,
@@ -300,24 +330,43 @@ function VideoCall({ id }: { id: string }) {
 
 	function handleNewICECandidateMsg(msg: { sender_id: string; candidate: RTCIceCandidateInit }) {
 		const candidate = new RTCIceCandidate(msg.candidate);
-		peers[msg['sender_id']]?.connection?.addIceCandidate(candidate).catch(window.alert);
+		const connection = peerRef.current[msg['sender_id']].connection;
+
+		if (!connection) {
+			throw 'WTF';
+		}
+
+		connection.addIceCandidate(candidate);
 	}
 
-	function handconstrackEvent(event: RTCTrackEvent) {
-		const videoElement = videoRef.current;
+	function handleTrackEvent(event: RTCTrackEvent, id: string) {
+		const videoElement = document.getElementById(id);
+
 		if (event.streams && videoElement) {
-			videoElement.srcObject = event.streams[0];
+			(videoElement as HTMLVideoElement).srcObject = event.streams[0];
 		}
 	}
 
 	return (
-		<div>
+		<div className='h-full w-full'>
 			<p>Status: {isConnected ? 'connected' : 'disconnected'}</p>
 			<div className='flex flex-col'>
-				<video ref={videoRef}></video>
+				<video
+					className='flex h-[50dvh]'
+					ref={videoRef}
+					autoPlay
+				/>
 				<h2>Peer list</h2>
-				<div className='flex flex-wrap gap-2'></div>
-
+				<div className='flex flex-wrap gap-2'>
+					{Object.entries(peerRef.current).map(([key]) => (
+						<video
+							className='border rounded-sm'
+							autoPlay
+							id={key}
+							key={key}
+						/>
+					))}
+				</div>
 				<div className='grid grid-cols-3 gap-2'>
 					<button onClick={() => setAudioMuted((prev) => !prev)}>Audio ({isAudioMuted ? 'Off' : 'On'})</button>
 					<button onClick={() => setVideoMuted((prev) => !prev)}>Video ({isVideoMuted ? 'Off' : 'On'})</button>

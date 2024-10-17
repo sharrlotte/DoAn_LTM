@@ -128,7 +128,7 @@ def on_data(data):
     target_sid = data['target_id']
     
     if sender_sid != request.sid:
-        print("[Not supposed to happen!] request.sid and sender_id don't match!!!")
+        print("[Not supposed to happen!] request.sid :{} and sender_id: {} don't match!!!".format(request.sid, sender_sid))
 
     if data["type"] != "new-ice-candidate":
         print('{} message from {} to {}'.format(data["type"], sender_sid, target_sid))
