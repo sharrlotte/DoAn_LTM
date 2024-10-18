@@ -69,6 +69,7 @@ function VideoCall({ id: roomId }: { id: string }) {
 			socket.off('connect', onConnect);
 			socket.off('disconnect', onDisconnect);
 		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	const startCamera = useCallback(() => {
@@ -89,16 +90,18 @@ function VideoCall({ id: roomId }: { id: string }) {
 					alert('Error! Unable to access camera or mic! ');
 				});
 		}
+
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	useEffect(() => {
 		startCamera();
-	}, []);
+	}, [startCamera]);
 
 	useEffect(() => {
-		return () => {
-			const element = videoRef.current;
+		const element = videoRef.current;
 
+		return () => {
 			if (element) {
 				(element.srcObject as MediaStream)?.getTracks().forEach((track) => {
 					track.stop();
@@ -132,7 +135,6 @@ function VideoCall({ id: roomId }: { id: string }) {
 
 		socket.on('user-connect', (data) => {
 			const id = data['sid'];
-			const name = data['name'];
 
 			peerRef.current[id] = { connection: undefined, name: '', id };
 		});
@@ -150,7 +152,6 @@ function VideoCall({ id: roomId }: { id: string }) {
 
 				// add existing users to user list
 				for (const id of Object.keys(list)) {
-					const name = list[id];
 					delete peerRef.current[id];
 
 					peerRef.current[id] = { connection: undefined, name: '', id };
@@ -159,7 +160,8 @@ function VideoCall({ id: roomId }: { id: string }) {
 				}
 			}
 		});
-	}, [start_webrtc]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [roomId]);
 
 	function closeConnection(id: string) {
 		const connection = peerRef.current[id]?.connection;
@@ -227,7 +229,7 @@ function VideoCall({ id: roomId }: { id: string }) {
 	}
 
 	function handleNegotiationNeededEvent(id: string) {
-		var connection = peerRef.current[id].connection;
+		const connection = peerRef.current[id].connection;
 		if (!connection) {
 			throw 'WTF';
 		}
@@ -259,7 +261,7 @@ function VideoCall({ id: roomId }: { id: string }) {
 		createPeerConnection(id);
 
 		const desc = new RTCSessionDescription(msg.sdp);
-		var connection = peerRef.current[id].connection;
+		const connection = peerRef.current[id].connection;
 
 		if (!connection) {
 			throw 'WTF';
@@ -309,7 +311,8 @@ function VideoCall({ id: roomId }: { id: string }) {
 	function handleAnswerMsg(msg: { sender_id: string; sdp: RTCSessionDescriptionInit }) {
 		const id = msg['sender_id'];
 		const desc = new RTCSessionDescription(msg['sdp']);
-		var connection = peerRef.current[id].connection;
+		const connection = peerRef.current[id].connection;
+
 		if (!connection) {
 			throw 'WTF';
 		}
