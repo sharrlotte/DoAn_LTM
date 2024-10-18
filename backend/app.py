@@ -2,19 +2,28 @@ from dotenv import load_dotenv
 import os
 
 from flask_socketio import SocketIO
+from schema.user import User
 from shared import db, migrate, login_manager
-from flask import Flask
+from flask import Flask,  request
 from flask_cors import CORS
-from flask_session import Session
+from flask_socketio import emit, join_room
+
+from shared import _users_in_room, _room_of_sid, _name_of_sid
+from flask_jwt_extended import JWTManager,  jwt_required, get_jwt_identity
+
+
 
 load_dotenv()
 
-SESSION_TYPE = 'filesystem'
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 def create_app():
     app = Flask(__name__)
+        
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DB_CONNECTION")
-
+    app.config['JWT_SECRET_KEY'] = os.getenv("SECRET_KEY")
+    app.config['JWT_TOKEN_LOCATION'] =  ['headers']
     app.secret_key = os.getenv("SECRET_KEY")
 
     db.init_app(app)
@@ -34,27 +43,26 @@ def create_app():
     return app
 
 app = create_app()
-app.config.from_object(__name__)
 
-CORS(app) 
-Session(app)
+
+CORS(app, supports_credentials=True) 
+jwt = JWTManager(app)
 
 socketio = SocketIO(app, cors_allowed_origins="*")
-    
-from flask import  request, session
-from flask_socketio import emit, join_room
 
-from shared import _users_in_room, _room_of_sid, _name_of_sid
-
-
+@app.after_request
+def apply_cors(response):
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    return response
 
 @app.post("/room")
+@jwt_required()
 def entry_checkpoint():
+    id = get_jwt_identity()
+    user = User.query.get(id)
+    
     room_id = request.form['room_id']
     name = request.form['name']
-    session[room_id] = { "name": name}
-    session.permanent = True
-    session.modified = True
 
     return "Success"    
 

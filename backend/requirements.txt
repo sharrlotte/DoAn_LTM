@@ -1,4 +1,3 @@
-flask_session
 Flask
 Flask-Cors
 google-auth
@@ -11,3 +10,4 @@ Flask-SocketIO
 gunicorn
 eventlet
 Flask-Login
+flask_jwt_extended
