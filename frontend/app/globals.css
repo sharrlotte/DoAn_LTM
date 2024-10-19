@@ -79,6 +79,6 @@ body {
 
 	html,
 	body {
-		@apply bg-background text-foreground overflow-hidden;
+		@apply bg-background text-foreground overflow-hidden h-full box-border w-full flex;
 	}
 }

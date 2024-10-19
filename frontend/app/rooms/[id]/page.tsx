@@ -10,6 +10,9 @@ const mediaConstraints: MediaStreamConstraints = {
 	audio: true,
 	video: {
 		height: 360,
+		aspectRatio: {
+			ideal: 1.77777776,
+		},
 		noiseSuppression: true,
 	},
 };
@@ -63,6 +66,7 @@ export default function Page({ params: { id } }: Props) {
 function LocalVideo({ id, session }: { id: string; session: any }) {
 	const [video, setVideo] = useState<HTMLVideoElement | null>(null);
 	const [stream, setStream] = useState<MediaStream | null>(null);
+	const router = useRouter();
 
 	useEffect(() => {
 		if (video) {
@@ -84,20 +88,28 @@ function LocalVideo({ id, session }: { id: string; session: any }) {
 	}, [video]);
 
 	return (
-		<div>
-			<video
-				className='flex h-[50dvh]'
-				ref={setVideo}
-				autoPlay
-			/>
-			{video && stream && (
-				<VideoCall
-					id={id}
-					session={session}
-					video={video}
-					stream={stream}
+		<div className='flex flex-col h-full overflow-hidden w-full gap-2 p-2'>
+			<Button
+				className='w-fit'
+				onClick={() => router.push('/')}
+			>
+				Thoát
+			</Button>
+			<div className='w-full overflow-y-auto flex flex-row flex-wrap gap-2'>
+				<video
+					className='w-full max-w-[min(100vw,300px)] md:w-[300px] flex max-h-[200px] object-cover aspect-video'
+					ref={setVideo}
+					autoPlay
 				/>
-			)}
+				{video && stream && (
+					<VideoCall
+						id={id}
+						session={session}
+						video={video}
+						stream={stream}
+					/>
+				)}
+			</div>
 		</div>
 	);
 }
@@ -437,37 +449,22 @@ function VideoCall({ id: roomId, session, video, stream }: { id: string; session
 		setRender((prev) => prev + 1);
 	}
 
-	return (
-		<div className='h-full w-full flex flex-col overflow-y-auto'>
-			<p>My id: {session.id}</p>
-			<p>Room id: {roomId}</p>
-			<p>Status: {isConnected ? 'connected' : 'disconnected'}</p>
-			<Button onClick={() => router.push('/')}>Quay lại</Button>
-			<div className='flex flex-col'>
-				<div className='flex flex-wrap gap-2'>
-					{Object.entries(peersRef.current)
-						.filter(([key]) => key !== session.id)
-						.map(([key, value]) => (
-							<div key={key}>
-								<div>{key}</div>
-								<div>{value.name}</div>
-								<div className='relative'>
-									<video
-										className='border rounded-sm'
-										id={key}
-										autoPlay
-									/>
-									<div className='absolute top-1/2 bottom-1/2 left-1/2 right-1/2'>{value.connection ? '' : 'Not connected'}</div>
-								</div>
-							</div>
-						))}
-				</div>
-				<div className='grid grid-cols-3 gap-2'>
-					<button onClick={() => setAudioMuted((prev) => !prev)}>Audio ({isAudioMuted ? 'Off' : 'On'})</button>
-					<button onClick={() => setVideoMuted((prev) => !prev)}>Video ({isVideoMuted ? 'Off' : 'On'})</button>
-					<button>End call</button>
+	return Object.entries(peersRef.current)
+		.filter(([key]) => key !== session.id)
+		.map(([key, value]) => (
+			<div
+				className='max-w-[min(100vw,300px)] md:w-[300px] object-cover aspect-video overflow-hidden max-h-[200px] h-full'
+				key={key}
+			>
+				<div className='relative w-full h-full flex bg-black justify-center'>
+					<div className='absolute bottom-2 left-1/2 right-1/2 text-nowrap text-center text-white'>{value.name}</div>
+					<video
+						className='border rounded-sm object-cover h-full border-none'
+						id={key}
+						autoPlay
+					/>
+					<div className='absolute top-1/2 bottom-1/2 left-1/2 text-white right-1/2'>{value.connection ? '' : 'Not connected'}</div>
 				</div>
 			</div>
-		</div>
-	);
+		));
 }

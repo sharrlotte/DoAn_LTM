@@ -55,13 +55,13 @@ export default function FriendList() {
 	}, [session]);
 
 	return (
-		<div className='flex-col items-center gap-x-5 w-full py-2 px-4 rounded-2xl shadow-3xl z-40 bg-white gap-2 grid'>
-			<div className='flex items-center gap-x-5 w-full py-2 px-4 rounded-2xl shadow-3xl z-40'>
+		<div className='items-center overflow-hidden gap-x-5 w-full h-full p-4 rounded-2xl shadow-3xl z-40 bg-white gap-2 flex flex-col'>
+			<div className='flex items-center w-full rounded-2xl gap-2 p-2 flex-wrap justify-between'>
 				<Link
 					className='text-3xl font-extrabold text-nowrap text-black'
 					href='/'
 				>
-					Video Call
+					ScamCenter
 				</Link>
 
 				<div className='flex w-full items-center gap-2 rounded-2xl'>
@@ -88,7 +88,6 @@ export default function FriendList() {
 						required
 					/>
 				</div>
-
 				<div className='flex items-center gap-2 h-auto  rounded-full '>
 					<Avatar className='size-12'>
 						<AvatarImage
@@ -110,7 +109,7 @@ export default function FriendList() {
 			<div className='flex w-full'>
 				<Add />
 			</div>
-			<div className='gap-2 grid'>
+			<div className='gap-2 grid overflow-y-auto w-full'>
 				{isLoading
 					? Array(20)
 							.fill(1)
