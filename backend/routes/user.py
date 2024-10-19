@@ -12,9 +12,9 @@ from shared import db, _users_in_room
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
 
 
-CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-BACKEND_URL = os.getenv("BACKEND_URL")
+CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
+CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
+BACKEND_URL = os.environ.get("BACKEND_URL")
 
 user_bp = Blueprint('users', __name__)
 
@@ -76,7 +76,7 @@ def callback():
     expires = timedelta(days=3)
     access_token = create_access_token(identity=user.id, expires_delta=expires)
 
-    return redirect(os.getenv('FRONTEND_APP_URL') +"/auth" + "?accessToken=" + access_token)
+    return redirect(os.environ.get('FRONTEND_APP_URL') +"/auth" + "?accessToken=" + access_token)
 
 
 

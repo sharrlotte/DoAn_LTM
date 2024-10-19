@@ -4,8 +4,6 @@ FROM python:3.11-slim AS builder
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the requirements file to the working directory
-COPY requirements.txt .
 COPY . .
 
 # Install the required Python packages in a temporary directory
