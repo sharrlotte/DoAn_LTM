@@ -16,12 +16,12 @@ def add_friend():
     friend_id = request.json.get('friend_id')
     
     if user_id == friend_id: 
-        return jsonify({'error': "Why you are so lonely, user_id and friend_id can be the same"})
+        return jsonify({'error': "Why are you so lonely, user_id and friend_id can be the same"})
 
     if not user_id or not friend_id:
         return jsonify({'error': 'user_id and friend_id are required'}), 400
 
-    existing_friend = Friend.query.filter_by(user_id=user_id, friend_id=friend_id).first()
+    existing_friend = Friend.query.filter((Friend.user_id==user_id) & (Friend.friend_id==friend_id) | (Friend.friend_id==user_id) & (Friend.user_id==friend_id)).first()
     if existing_friend:
         return jsonify({'error': 'Friend already added'}), 400
 
@@ -46,8 +46,7 @@ def list_friends():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
 
-    friends_query = db.session.query(User).join(Friend, Friend.friend_id == User.id)\
-                                    .filter(Friend.user_id == user_id)\
+    friends_query = db.session.query(User).join(Friend, (Friend.user_id == User.id) & (Friend.friend_id == user_id) | (Friend.friend_id == User.id) & (Friend.user_id == user_id))\
                                     .paginate(page=page, per_page=per_page, error_out=False)
 
     friends = [{'id': friend.id, 'name': friend.name, 'avatar': friend.avatar} for friend in friends_query.items]

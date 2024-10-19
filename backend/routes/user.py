@@ -8,12 +8,13 @@ import urllib.parse
 import os
 from schema.friend import Friend
 from schema.user import User
-from shared import db
+from shared import db, _users_in_room
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
 
 
 CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+BACKEND_URL = os.getenv("BACKEND_URL")
 
 user_bp = Blueprint('users', __name__)
 
@@ -23,7 +24,7 @@ def home():
 
 @user_bp.route('/auth/login')
 def videocall_login():
-    redirect_uri = 'http://localhost:8080/callback'
+    redirect_uri = f'{BACKEND_URL}/callback'
     scope = 'openid email profile'
 
     google_auth_url = (
@@ -49,7 +50,7 @@ def callback():
         'code': code,
         'client_id': CLIENT_ID,
         'client_secret': CLIENT_SECRET,
-        'redirect_uri': 'http://localhost:8080/callback',
+        'redirect_uri': f'{BACKEND_URL}/callback',
         'grant_type': 'authorization_code'
     }
 
@@ -76,6 +77,8 @@ def callback():
     access_token = create_access_token(identity=user.id, expires_delta=expires)
 
     return redirect(os.getenv('FRONTEND_APP_URL') +"/auth" + "?accessToken=" + access_token)
+
+
 
 @user_bp.route('/auth/session', methods=['GET'])
 @jwt_required()
@@ -118,5 +121,13 @@ def find_user():
         'total': paginated_users.total,
         'page': paginated_users.page,
         'per_page': paginated_users.per_page,
-        'users': [{'user_id': user.id, 'name': user.name,'avatar': user.avatar} for user in paginated_users.items]
+        'users': [{'id': user.id, 'name': user.name,'avatar': user.avatar} for user in paginated_users.items]
     })
+
+@jwt_required()
+@user_bp.post('/call')
+def call():
+    id = get_jwt_identity()
+    friend_id = request.json.get('friend_id')
+
+    _

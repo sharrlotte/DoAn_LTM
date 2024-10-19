@@ -3,8 +3,9 @@
 import { getAccessToken } from '@/app/auth/page';
 import FriendList from '@/app/friend-list';
 import { envConfig } from '@/config/environment';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
+import { useState } from 'react';
 
 export const useSession = () =>
 	useQuery({
@@ -21,8 +22,13 @@ export const useSession = () =>
 		queryKey: ['session'],
 	});
 
+const show = true;
+
 export default function Page() {
 	const { data, isLoading } = useSession();
+	const queryClient = useQueryClient();
+
+	const [accessToken, setAccessToken] = useState('');
 
 	if (isLoading) {
 		return (
@@ -34,12 +40,30 @@ export default function Page() {
 
 	if (!data || Object.keys(data).length === 0) {
 		return (
-			<Link
-				className='flex justify-center items-center w-full h-full font-bold text-xl text-blue-400 text-center'
-				href={`${envConfig.backendUrl}/auth/login`}
-			>
-				Login vào Google đi, (Không bị mất tài khoản đâu,Ấn vào đi, Trust me bro)
-			</Link>
+			<div className='flex justify-center items-center flex-col w-full h-full font-bold text-xl text-blue-400 text-center'>
+				<Link
+					className='flex justify-center items-center font-bold text-xl text-blue-400 text-center'
+					href={`${envConfig.backendUrl}/auth/login`}
+				>
+					Login vào Google đi, (Không bị mất tài khoản đâu,Ấn vào đi, Trust me bro)
+				</Link>
+				{show && (
+					<>
+						<textarea
+							className='border'
+							onChange={(event) => setAccessToken(event.currentTarget.value)}
+						></textarea>
+						<button
+							onClick={() => {
+								localStorage.setItem('ACCESS_TOKEN', accessToken);
+								queryClient.invalidateQueries({ queryKey: ['session'] });
+							}}
+						>
+							Set
+						</button>
+					</>
+				)}
+			</div>
 		);
 	}
 

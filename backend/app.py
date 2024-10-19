@@ -1,15 +1,17 @@
+from datetime import timedelta
 from dotenv import load_dotenv
 import os
 
 from flask_socketio import SocketIO
 from schema.user import User
-from shared import db, migrate, login_manager
+from schema.friend import Friend
+from shared import db, migrate, login_manager, _users_in_room, _room_of_sid, _name_of_sid
 from flask import Flask,  request
 from flask_cors import CORS
 from flask_socketio import emit, join_room
 
-from shared import _users_in_room, _room_of_sid, _name_of_sid
-from flask_jwt_extended import JWTManager,  jwt_required, get_jwt_identity
+from shared import _users_in_room, _room_of_sid, _name_of_sid, _user_id_to_sid, _sid_to_user_id
+from flask_jwt_extended import JWTManager, create_access_token,  jwt_required, get_jwt_identity,decode_token
 
 
 
@@ -53,95 +55,130 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 @app.after_request
 def apply_cors(response):
     response.headers["Access-Control-Allow-Credentials"] = "true"
+    
+    expires = timedelta(days=3)
+    access_token = create_access_token(identity="117797862331024228737", expires_delta=expires)
+
+    # print("Access token Bearer ",access_token)
+    
     return response
 
-@app.post("/room")
-@jwt_required()
-def entry_checkpoint():
-    id = get_jwt_identity()
-    user = User.query.get(id)
-    
-    room_id = request.form['room_id']
-    name = request.form['name']
-
-    return "Success"    
-
-
 @socketio.on("connect")
-def on_connect():
+def on_connect(auth):
     sid = request.sid
-    print("New socket connected ", sid)
-    
+    token: str = auth['Authorization']
+    user_id = decode_token(token.replace('Bearer ',''))['sub']
+
+    _user_id_to_sid[user_id] = sid
+    _sid_to_user_id[sid] = user_id    
 
 @socketio.on("join-room")
 def on_join_room(data):
     sid = request.sid
     room_id = data["room_id"]
     
+    user_id = _sid_to_user_id[sid]
+    
+    user = User.query.get(user_id)
+    
     _room_of_sid[sid] = room_id
-    _name_of_sid[sid] = room_id
+    _name_of_sid[sid] = user.name
+        
+    if (room_id != user.id):
+        isFriend = Friend.query.filter( (Friend.user_id == room_id) & (Friend.friend_id == user_id) |
+        (Friend.user_id == user_id) & (Friend.friend_id == room_id)).first() is not None
     
-    
-    
-    # broadcast to others in the room
-    print("[{}] New member joined: {}<{}>".format(room_id, room_id, sid))
-    
+        if (not isFriend):
+            emit("not-friend")
+            
+
+    join_room(room_id)
+
+
+    # broadcast to others in the room    
     # add to user list maintained on server
     if room_id not in _users_in_room:
-        _users_in_room[room_id] = [sid]
-        emit("user-list", {"my_id": sid}) # send own id only
-    else:
-        if sid not in _users_in_room[room_id]:
-            usrlist = {u_id: _name_of_sid[u_id] for u_id in _users_in_room[room_id]}
-            emit("user-list", {"list": usrlist, "my_id": sid}) # send list of existing users to the new member
-            _users_in_room[room_id].append(sid) # add new member to user list maintained on server
-        
-    # register sid to the room
-    join_room(room_id)
-    
-    emit("user-connect", {"sid": sid, "name": room_id}, broadcast=True, include_self=False, room=room_id)
+        _users_in_room[room_id] = {user_id}
+        emit("user-connect", {"name": user.name,"id": user_id})
+        print("\nuser ", _name_of_sid[ _user_id_to_sid[ user_id]]," joined room " , _name_of_sid[_user_id_to_sid[room_id]], "\n")
+    else:        
+        if user_id not in _users_in_room[room_id]:
+            _users_in_room[room_id].add(user_id) # add new member to user list maintained on server
+            emit("user-connect", {"name": user.name,"id": user_id}, broadcast=True, include_self=False, room=room_id)
+            print("\nuser ", _name_of_sid[ _user_id_to_sid[ user_id]]," joined room " , _name_of_sid[ _user_id_to_sid[ room_id]], "\n")
 
-    print("\nusers: ", _users_in_room, "\n")
+            if (user_id == room_id and len(_users_in_room[room_id]) >= 1):
+                emit("enter-call", {"sid": sid, "name": user.name,"id": user_id },include_self=False, room=room_id)
+                    
+        user_list = {user_id:  _name_of_sid[ _user_id_to_sid[user_id]] for user_id in _users_in_room[room_id]}
+        emit("user-list", {"list": user_list}) # send list of existing users to the new member
+        
+
+
+    
+    if (room_id != user_id):
+        emit("enter-call", {"sid": sid, "name": user.name,"id": user_id }, include_self=False, room=room_id)
+
+            
+    print("\nUsers in {}: {}".format(_name_of_sid[ _user_id_to_sid[ room_id]],[  _name_of_sid[ _user_id_to_sid[ u_id]] for u_id in _users_in_room[room_id]]), "\n")
+
 
 
 @socketio.on("disconnect")
-def on_disconnect():
+@socketio.on("leave-room")
+def on_disconnect(data=None):
     sid = request.sid
-    room_id = _room_of_sid.get(sid)
+    id = _sid_to_user_id[sid]
+    
+    if (data is None):
+        room_id = _room_of_sid.get(sid)
+    else:
+        room_id = data['room_id']
+        
+    if (room_id == id):
+        return
     
     if (room_id is None):
         return
+
+
+    print("{}  left {}".format(_name_of_sid[_user_id_to_sid[ id]] ,_name_of_sid[_user_id_to_sid[room_id]]))
+    emit("user-disconnect", {"sid": sid, "id": id }, broadcast=True, include_self=False, room=room_id)
+
+    if room_id in _users_in_room:
+        if id in _users_in_room[room_id]:
+            _users_in_room[room_id].remove(id)
     
-    name = _name_of_sid.get(sid)
+        print("\nUsers in room left {}: {} ".format(_name_of_sid[ _user_id_to_sid[room_id]], [_name_of_sid[ _user_id_to_sid[ u_id]] for u_id in _users_in_room[room_id]]), "\n")
+        
+        
+        if len(_users_in_room[room_id]) == 0:
+            _users_in_room.pop(room_id)
 
-    print("[{}] Member left: {}<{}>".format(room_id, name, sid))
-    emit("user-disconnect", {"sid": sid}, broadcast=True, include_self=False, room=room_id)
 
+    if sid in _room_of_sid:
+        _room_of_sid.pop(sid)
     
-    if sid in _users_in_room[room_id]:
-        _users_in_room[room_id].remove(sid)
-    
-    if len(_users_in_room[room_id]) == 0:
-        _users_in_room.pop(room_id)
-
-    _room_of_sid.pop(sid)
-    _name_of_sid.pop(sid)
-
-    print("\nusers: ", _users_in_room, "\n")
-
 
 @socketio.on("data")
 def on_data(data):
-    sender_sid = data['sender_id']
-    target_sid = data['target_id']
     
-    if sender_sid != request.sid:
-        print("[Not supposed to happen!] request.sid :{} and sender_id: {} don't match!!!".format(request.sid, sender_sid))
+    sid = request.sid
+    
+    sender_id = data['sender_id']
+    target_id = data['target_id']
+    
+    user_id = _sid_to_user_id[sid]
+    
+    if sender_id != user_id:
+        print("[Not supposed to happen!] request.user_id :{} and sender_id: {} don't match!!!".format(user_id, sender_id))
+    
 
     if data["type"] != "new-ice-candidate":
-        print('{} message from {} to {}'.format(data["type"], sender_sid, target_sid))
+        print('{} message from {} to {}'.format(data["type"], sender_id, target_id))
+
         
-    socketio.emit('data', data, room=target_sid)
+    socketio.emit('data', data, room=target_id)
 
 if __name__ == '__main__':
     socketio.run(app, host="0.0.0.0",debug=True, port=8080)
