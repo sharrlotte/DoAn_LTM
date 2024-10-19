@@ -7,7 +7,7 @@ import { Avatar } from '@radix-ui/react-avatar';
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { envConfig } from '@/config/environment';
-import { getAccessToken } from '@/app/auth/page';
+import { getAccessToken } from '@/app/auth/util';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState } from 'react';
 import { useSession } from '@/app/page';

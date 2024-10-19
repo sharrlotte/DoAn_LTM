@@ -3,10 +3,6 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useEffect } from 'react';
 
-export function getAccessToken() {
-	return 'Bearer ' + (localStorage.getItem('ACCESS_TOKEN') as string) || '';
-}
-
 export default function Page() {
 	const query = useSearchParams();
 	const router = useRouter();

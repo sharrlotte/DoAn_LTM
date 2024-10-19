@@ -1,6 +1,6 @@
 'use client';
 
-import { getAccessToken } from '@/app/auth/page';
+import { getAccessToken } from '@/app/auth/util';
 import FriendList from '@/app/friend-list';
 import { envConfig } from '@/config/environment';
 import { useQuery, useQueryClient } from '@tanstack/react-query';

@@ -1,6 +1,6 @@
 'use client';
 
-import { getAccessToken } from '@/app/auth/page';
+import { getAccessToken } from '@/app/auth/util';
 import { envConfig } from '@/config/environment';
 import { io } from 'socket.io-client';
 
