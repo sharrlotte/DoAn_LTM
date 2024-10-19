@@ -1,9 +1,17 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import React, { useEffect } from 'react';
+import React, { Suspense, useEffect } from 'react';
 
 export default function Page() {
+	return (
+		<Suspense>
+			<Search />
+		</Suspense>
+	);
+}
+
+function Search() {
 	const query = useSearchParams();
 	const router = useRouter();
 

@@ -1,3 +1,5 @@
+'use client';
+
 import { createRoom } from '@/action';
 import React from 'react';
 
