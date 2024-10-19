@@ -10,9 +10,9 @@ import { envConfig } from '@/config/environment';
 import { getAccessToken } from '@/app/auth/util';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState } from 'react';
-import { useSession } from '@/app/page';
 import { socket } from '@/config/socket';
 import { useRouter } from 'next/navigation';
+import { useSession } from '@/app/query-context';
 
 export default function FriendList() {
 	const { data: session } = useSession();

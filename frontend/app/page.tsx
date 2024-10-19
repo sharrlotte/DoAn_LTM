@@ -2,25 +2,11 @@
 
 import { getAccessToken } from '@/app/auth/util';
 import FriendList from '@/app/friend-list';
+import { useSession } from '@/app/query-context';
 import { envConfig } from '@/config/environment';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';
-
-export const useSession = () =>
-	useQuery({
-		queryFn: () =>
-			fetch(`${envConfig.backendUrl}/auth/session`, {
-				headers: {
-					Authorization: getAccessToken(),
-				},
-				cache: 'no-cache',
-			}).then((result) => {
-				if (result.ok) return result.json();
-				return null;
-			}),
-		queryKey: ['session'],
-	});
 
 const show = true;
 

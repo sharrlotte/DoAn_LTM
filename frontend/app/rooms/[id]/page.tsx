@@ -1,6 +1,6 @@
 'use client';
 
-import { useSession } from '@/app/page';
+import { useSession } from '@/app/query-context';
 import { Button } from '@/components/ui/button';
 import { socket } from '@/config/socket';
 import { useRouter } from 'next/navigation';
