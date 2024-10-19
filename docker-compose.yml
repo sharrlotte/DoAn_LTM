@@ -1,0 +1,23 @@
+version: '3'
+
+services:
+  app:
+    build: ./backend
+    command: ['python', 'app.py']
+    ports:
+      - '8080:8080'
+    networks:
+      - render-network
+
+  nginx:
+    build: ./nginx
+    ports:
+      - '80:80' # Render will expose HTTPS on this port
+    depends_on:
+      - app
+    networks:
+      - render-network
+
+networks:
+  render-network:
+    driver: bridge

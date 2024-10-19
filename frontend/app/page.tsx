@@ -19,7 +19,7 @@ export default function Page() {
 	if (isLoading) {
 		return (
 			<div className='flex justify-center items-center w-full h-full'>
-				<div className='font-bold text-xl animate-spin duration-[5000ms]'>Đang tải chờ chút</div>
+				<div className='font-bold text-xl animate-spin duration-[8080ms]'>Đang tải chờ chút</div>
 			</div>
 		);
 	}
