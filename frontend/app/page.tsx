@@ -8,7 +8,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';
 
-const show = true;
+const show = false;
 
 export default function Page() {
 	const { data, isLoading } = useSession();
