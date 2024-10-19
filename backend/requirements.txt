@@ -11,3 +11,4 @@ gunicorn
 eventlet
 Flask-Login
 flask_jwt_extended
+Flask-SSLify

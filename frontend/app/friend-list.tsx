@@ -33,7 +33,6 @@ export default function FriendList() {
 	useEffect(() => {
 		function onConnect() {
 			socket.emit('join-room', { room_id: session.id });
-			console.log('Request join room: ' + session.id + ' in friend list');
 		}
 
 		function onEnterCall(data: any) {
@@ -56,8 +55,8 @@ export default function FriendList() {
 	}, [session]);
 
 	return (
-		<div className='flex-col items-center gap-x-5 sticky w-full py-2 px-4 rounded-2xl shadow-3xl z-40 bg-white gap-2 grid'>
-			<div className='flex items-center gap-x-5 sticky w-full py-2 px-4 rounded-2xl shadow-3xl z-40'>
+		<div className='flex-col items-center gap-x-5 w-full py-2 px-4 rounded-2xl shadow-3xl z-40 bg-white gap-2 grid'>
+			<div className='flex items-center gap-x-5 w-full py-2 px-4 rounded-2xl shadow-3xl z-40'>
 				<Link
 					className='text-3xl font-extrabold text-nowrap text-black'
 					href='/'
@@ -137,7 +136,6 @@ export default function FriendList() {
 								<Link
 									className='gap-2'
 									href={`/rooms/${friend.id}`}
-									onClick={() => socket.emit('join-room', { room_id: friend.id })}
 								>
 									Gọi
 								</Link>

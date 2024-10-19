@@ -8,12 +8,11 @@ from schema.friend import Friend
 from shared import db, migrate, login_manager, _users_in_room, _room_of_sid, _name_of_sid
 from flask import Flask,  request
 from flask_cors import CORS
-from flask_socketio import emit, join_room
+from flask_socketio import emit, join_room, leave_room
 
 from shared import _users_in_room, _room_of_sid, _name_of_sid, _user_id_to_sid, _sid_to_user_id
 from flask_jwt_extended import JWTManager, create_access_token,  jwt_required, get_jwt_identity,decode_token
-
-
+from flask_sslify import SSLify
 
 load_dotenv()
 
@@ -45,7 +44,7 @@ def create_app():
     return app
 
 app = create_app()
-
+sslify = SSLify(app)
 
 CORS(app, supports_credentials=True) 
 jwt = JWTManager(app)
@@ -57,9 +56,9 @@ def apply_cors(response):
     response.headers["Access-Control-Allow-Credentials"] = "true"
     
     expires = timedelta(days=3)
-    access_token = create_access_token(identity="117797862331024228737", expires_delta=expires)
+    access_token = create_access_token(identity="107272552114817473073", expires_delta=expires)
 
-    # print("Access token Bearer ",access_token)
+    print("Access token Bearer",access_token)
     
     return response
 
@@ -95,6 +94,7 @@ def on_join_room(data):
     join_room(room_id)
 
 
+    emit("user-connect", {"name": user.name,"id": user_id}, broadcast=True, room=room_id)
     # broadcast to others in the room    
     # add to user list maintained on server
     if room_id not in _users_in_room:
@@ -104,15 +104,14 @@ def on_join_room(data):
     else:        
         if user_id not in _users_in_room[room_id]:
             _users_in_room[room_id].add(user_id) # add new member to user list maintained on server
-            emit("user-connect", {"name": user.name,"id": user_id}, broadcast=True, include_self=False, room=room_id)
             print("\nuser ", _name_of_sid[ _user_id_to_sid[ user_id]]," joined room " , _name_of_sid[ _user_id_to_sid[ room_id]], "\n")
 
-            if (user_id == room_id and len(_users_in_room[room_id]) >= 1):
-                emit("enter-call", {"sid": sid, "name": user.name,"id": user_id },include_self=False, room=room_id)
+    emit("enter-call", {"sid": sid, "name": user.name,"id": user_id }, include_self=False, room=room_id)
+    
                     
-        user_list = {user_id:  _name_of_sid[ _user_id_to_sid[user_id]] for user_id in _users_in_room[room_id]}
-        emit("user-list", {"list": user_list}) # send list of existing users to the new member
-        
+    user_list = {user_id:  _name_of_sid[ _user_id_to_sid[user_id]] for user_id in _users_in_room[room_id]}
+    emit("user-list", {"list": user_list}, broadcast=True,include_self=False, room=room_id) # send list of existing users to the new member
+
 
 
     
@@ -125,25 +124,52 @@ def on_join_room(data):
 
 
 @socketio.on("disconnect")
-@socketio.on("leave-room")
-def on_disconnect(data=None):
+def on_disconnect():
     sid = request.sid
     id = _sid_to_user_id[sid]
     
+    emit("user-disconnect", {"sid": sid, "id": id },include_self=False, broadcast=True, room=id)
+    print("{}  left {}".format(_name_of_sid[_user_id_to_sid[ id]] ,_name_of_sid[_user_id_to_sid[id]]))
+    
+
+    leave_room(id)
+
+    if id in _users_in_room:
+        if id in _users_in_room[id]:
+            _users_in_room[id].remove(id)
+    
+        print("\nUsers in room left {}: {} ".format(_name_of_sid[ _user_id_to_sid[id]], [_name_of_sid[ _user_id_to_sid[ u_id]] for u_id in _users_in_room[id]]), "\n")
+        
+        
+        if len(_users_in_room[id]) == 0:
+            _users_in_room.pop(id)
+
+
+    if sid in _room_of_sid:
+        _room_of_sid.pop(sid)
+    
+
+@socketio.on("leave-room")
+def on_leave_room(data=None):
+    sid = request.sid
+    id = _sid_to_user_id[sid]
+
     if (data is None):
-        room_id = _room_of_sid.get(sid)
+        room_id = _sid_to_user_id.get(sid)
     else:
         room_id = data['room_id']
         
+    if (room_id is None):
+        return
+    
+    emit("user-disconnect", {"sid": sid, "id": id },include_self=False, broadcast=True, room=room_id)
+    print("{}  left {}".format(_name_of_sid[_user_id_to_sid[ id]] ,_name_of_sid[_user_id_to_sid[room_id]]))
+    
     if (room_id == id):
         return
     
-    if (room_id is None):
-        return
 
-
-    print("{}  left {}".format(_name_of_sid[_user_id_to_sid[ id]] ,_name_of_sid[_user_id_to_sid[room_id]]))
-    emit("user-disconnect", {"sid": sid, "id": id }, broadcast=True, include_self=False, room=room_id)
+    leave_room(room_id)
 
     if room_id in _users_in_room:
         if id in _users_in_room[room_id]:
@@ -167,6 +193,7 @@ def on_data(data):
     
     sender_id = data['sender_id']
     target_id = data['target_id']
+    id = data['id']
     
     user_id = _sid_to_user_id[sid]
     
@@ -175,10 +202,11 @@ def on_data(data):
     
 
     if data["type"] != "new-ice-candidate":
-        print('{} message from {} to {}'.format(data["type"], sender_id, target_id))
+        print('\nid: {} => {} message from {} to {}\n'.format(id, data["type"], sender_id, target_id))
+
 
         
-    socketio.emit('data', data, room=target_id)
+    socketio.emit('data', data,include_self=False, room=target_id)
 
 if __name__ == '__main__':
     socketio.run(app, host="0.0.0.0",debug=True, port=8080)
