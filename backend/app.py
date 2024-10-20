@@ -77,6 +77,15 @@ def on_connect(auth):
     
     db.session.commit()
 
+@socketio.on("chat")
+def on_join_room(data):
+    message = data["message"]
+    user_id = _sid_to_user_id[request.sid]
+    
+    user = User.query.get(user_id)
+
+    emit("on-chat", {'message': message, 'user_id': user.id, 'avatar': user.avatar, 'name': user.name}, broadcast=True)
+
 @socketio.on("reject")
 def on_join_room(data):
     room_id = data["room_id"]

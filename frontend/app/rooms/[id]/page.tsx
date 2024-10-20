@@ -1,6 +1,7 @@
 'use client';
 
 import { useSession } from '@/app/query-context';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { socket } from '@/config/socket';
 import { useRouter } from 'next/navigation';
@@ -73,6 +74,9 @@ function LocalVideo({ id, session }: { id: string; session: any }) {
 	const [stream, setStream] = useState<MediaStream | null>(null);
 	const router = useRouter();
 
+	const [messages, setMessages] = useState<any[]>([]);
+	const [input, setInput] = useState('');
+
 	useEffect(() => {
 		if (video) {
 			navigator.mediaDevices
@@ -86,21 +90,27 @@ function LocalVideo({ id, session }: { id: string; session: any }) {
 					alert('Error! Unable to access camera or mic! ');
 				});
 		}
+		socket.on('on-chat', onChat);
+
+		function onChat(data: any) {
+			setMessages((prev) => [...prev, data]);
+		}
 
 		return () => {
+			socket.off('on-chat', onChat);
 			stream?.getTracks().forEach((track) => track.stop());
 		};
 	}, [video]);
 
 	return (
-		<div className='flex flex-col h-full overflow-hidden w-full gap-2 p-2'>
+		<div className='flex flex-col h-full overflow-y-auto w-full gap-2 p-2'>
 			<Button
 				className='w-fit'
 				onClick={() => router.push('/')}
 			>
 				Thoát
 			</Button>
-			<div className='w-full overflow-y-auto flex flex-row flex-wrap gap-2'>
+			<div className='w-full flex flex-row flex-wrap border-black border p-2 rounded-md gap-2'>
 				<video
 					className='w-full max-w-[min(100vw,300px)] md:w-[300px] flex max-h-[200px] object-cover aspect-video'
 					ref={setVideo}
@@ -114,6 +124,37 @@ function LocalVideo({ id, session }: { id: string; session: any }) {
 						stream={stream}
 					/>
 				)}
+			</div>
+			<div className='min-h-[50dvh] max-h-[50dvh] overflow-y-auto flex flex-col border rounded-md border-black p-2 gap-1'>
+				{messages.map(({ message, user_id, avatar, name }, index) => (
+					<span key={index} className='flex gap-1 items-center'>
+						<Avatar className='size-8'>
+							<AvatarImage
+								className='rounded-full size-8'
+								src={avatar}
+							/>
+							<AvatarFallback>{(name as string).slice(0, 2)}</AvatarFallback>
+						</Avatar>
+						{name}: {message}
+					</span>
+				))}
+			</div>
+			<div className='flex gap-2 items-center w-full'>
+				<input
+					className='p-2 rounded-sm w-full border-black border'
+          value={input}
+					onChange={(event) => setInput(event.currentTarget.value)}
+				/>
+				<Button
+					onClick={() => {
+						if (input) {
+							socket.emit('chat', { message: input });
+							setInput('');
+						}
+					}}
+				>
+					Gửi
+				</Button>
 			</div>
 		</div>
 	);
