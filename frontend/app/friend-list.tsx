@@ -155,12 +155,16 @@ export default function FriendList() {
 									<AvatarFallback>{friend.name?.slice(0, 2)}</AvatarFallback>
 								</Avatar>
 								<span>{friend.name}</span>
-								<Link
-									className='gap-2'
-									href={`/rooms/${friend.id}`}
-								>
-									Gọi
-								</Link>
+								{friend.status === 'online' ? (
+									<Link
+										className='gap-2 border-2 bg-emerald-400'
+										href={`/rooms/${friend.id}`}
+									>
+										Gọi
+									</Link>
+								) : (
+									'Offline'
+								)}
 							</div>
 					  ))}
 			</div>

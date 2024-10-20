@@ -69,7 +69,13 @@ def on_connect(auth):
     user_id = decode_token(token.replace('Bearer ',''))['sub']
 
     _user_id_to_sid[user_id] = sid
-    _sid_to_user_id[sid] = user_id    
+    _sid_to_user_id[sid] = user_id   
+    
+    user = User.query.get(user_id)
+    
+    user.status = "online"
+    
+    db.session.commit()
 
 @socketio.on("reject")
 def on_join_room(data):
@@ -134,6 +140,13 @@ def on_join_room(data):
 def on_disconnect():
     sid = request.sid
     id = _sid_to_user_id[sid]
+    
+    user = User.query.get(id)
+    
+    user.status = "offline"
+    
+    db.session.commit()
+
     
     emit("user-disconnect", {"sid": sid, "id": id },include_self=False, broadcast=True, room=id)
     print("{}  left {}".format(_name_of_sid[_user_id_to_sid[ id]] ,_name_of_sid[_user_id_to_sid[id]]))

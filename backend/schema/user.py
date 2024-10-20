@@ -6,6 +6,7 @@ class User(db.Model):
     email = db.Column(db.String, unique=True, nullable=False)
     name = db.Column(db.String, nullable=False)
     avatar = db.Column(db.String, nullable=True)
+    status = db.Column(db.String)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     is_authenticated= True
 
@@ -14,6 +15,7 @@ class User(db.Model):
         self.email = email
         self.name = name
         self.avatar = avatar
+        self.status = "offline"
     
     def as_dict(self):        
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}

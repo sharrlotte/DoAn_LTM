@@ -49,7 +49,7 @@ def list_friends():
     friends_query = db.session.query(User).join(Friend, (Friend.user_id == User.id) & (Friend.friend_id == user_id) | (Friend.friend_id == User.id) & (Friend.user_id == user_id))\
                                     .paginate(page=page, per_page=per_page, error_out=False)
 
-    friends = [{'id': friend.id, 'name': friend.name, 'avatar': friend.avatar} for friend in friends_query.items]
+    friends = [{'id': friend.id, 'name': friend.name, 'avatar': friend.avatar, 'status': friend.status} for friend in friends_query.items]
 
     return jsonify({
         'friends': friends,

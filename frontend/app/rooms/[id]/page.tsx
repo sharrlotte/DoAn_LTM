@@ -194,7 +194,7 @@ function VideoCall({ id: roomId, session, video, stream }: { id: string; session
 			if (Object.keys(peersRef.current).length <= 1) {
 				router.push('/');
 				alert('Cuộc gọi đã kết thúc');
-        return
+				return;
 			}
 
 			setRender((prev) => prev + 1);
@@ -382,6 +382,22 @@ function VideoCall({ id: roomId, session, video, stream }: { id: string; session
 			});
 	}, [render]);
 
+	useEffect(() => {
+		const interval = setInterval(() => {
+			Object.values(peersRef.current)
+				.filter((peer) => peer.stream)
+				.forEach((peer) => {
+					const videoElement = document.getElementById(peer.id) as HTMLVideoElement;
+					if (videoElement) {
+						videoElement.srcObject = peer.stream || null;
+						videoElement.play();
+					}
+				});
+		}, 1000);
+
+		return () => clearInterval(interval);
+	}, []);
+
 	// function handleNegotiationNeededEvent(id: string) {
 	// 	const connection = peersRef.current[id].connection;
 
@@ -472,6 +488,8 @@ function VideoCall({ id: roomId, session, video, stream }: { id: string; session
 						className='border rounded-sm object-cover h-full border-none'
 						id={key}
 						autoPlay
+						muted={isAudioMuted}
+						controls
 					/>
 					<div className='absolute top-1/2 bottom-1/2 left-1/2 text-white right-1/2'>{value.connection ? '' : 'Not connected'}</div>
 				</div>
