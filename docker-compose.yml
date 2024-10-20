@@ -20,7 +20,9 @@ services:
 
   turn:
     image: coturn/coturn
-    network_mode: "host"        
+    network_mode: "host"
+    environment:
+      - user=myuser:userpassword    
 
 networks:
   render-network:
