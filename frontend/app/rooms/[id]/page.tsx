@@ -393,7 +393,7 @@ function VideoCall({ id: roomId, session, video, stream }: { id: string; session
 						videoElement.play();
 					}
 				});
-		}, 1000);
+		}, 5000);
 
 		return () => clearInterval(interval);
 	}, []);
@@ -489,7 +489,6 @@ function VideoCall({ id: roomId, session, video, stream }: { id: string; session
 						id={key}
 						autoPlay
 						muted={isAudioMuted}
-						controls
 					/>
 					<div className='absolute top-1/2 bottom-1/2 left-1/2 text-white right-1/2'>{value.connection ? '' : 'Not connected'}</div>
 				</div>

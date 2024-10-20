@@ -157,7 +157,7 @@ export default function FriendList() {
 								<span>{friend.name}</span>
 								{friend.status === 'online' ? (
 									<Link
-										className='gap-2 border-2 bg-emerald-400'
+										className='gap-2 border-2 px-2 py-1 text-white flex justify-center text-sm rounded-md bg-green-400'
 										href={`/rooms/${friend.id}`}
 									>
 										Gọi
