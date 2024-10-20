@@ -18,6 +18,10 @@ services:
     networks:
       - render-network
 
+  turn:
+    image: coturn/coturn
+    network_mode: "host"        
+
 networks:
   render-network:
     driver: bridge
