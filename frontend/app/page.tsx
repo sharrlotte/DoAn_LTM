@@ -4,11 +4,12 @@ import { getAccessToken } from '@/app/auth/util';
 import FriendList from '@/app/friend-list';
 import { useSession } from '@/app/query-context';
 import { envConfig } from '@/config/environment';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
+import { env } from 'process';
 import { useState } from 'react';
 
-const show = false;
+const show = process.env.NODE_ENV === 'development';
 
 export default function Page() {
 	const { data, isLoading } = useSession();

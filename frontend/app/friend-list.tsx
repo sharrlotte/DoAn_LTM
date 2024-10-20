@@ -18,6 +18,7 @@ export default function FriendList() {
 	const { data: session } = useSession();
 	const router = useRouter();
 	const queryClient = useQueryClient();
+	const [caller, setCaller] = useState<string | undefined>(undefined);
 
 	const { data, isLoading } = useQuery({
 		queryFn: () =>
@@ -37,8 +38,7 @@ export default function FriendList() {
 
 		function onEnterCall(data: any) {
 			console.log('User ' + data.name + ' is calling');
-
-			router.push(`/rooms/${session.id}`);
+			setCaller(data.name);
 		}
 
 		if (session) {
@@ -56,6 +56,29 @@ export default function FriendList() {
 
 	return (
 		<div className='items-center overflow-hidden gap-x-5 w-full h-full p-4 rounded-2xl shadow-3xl z-40 bg-white gap-2 flex flex-col'>
+			{caller && (
+				<div className='fixed inset-0 flex justify-center items-center bg-card flex-col gap-2'>
+					<span>{`${caller} đang gọi cho bạn`} </span>
+					<div className='flex gap-2 justify-center items-center'>
+						<Button
+							onClick={() => {
+								setCaller(undefined);
+								socket.emit('reject', { room_id: session.id });
+							}}
+						>
+							Từ chối
+						</Button>
+						<Button
+							onClick={() => {
+								setCaller(undefined);
+								router.push(`/rooms/${session.id}`);
+							}}
+						>
+							Trả lời
+						</Button>
+					</div>
+				</div>
+			)}
 			<div className='flex items-center w-full rounded-2xl gap-2 p-2 flex-wrap justify-between'>
 				<Link
 					className='text-3xl font-extrabold text-nowrap text-black'

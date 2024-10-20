@@ -25,7 +25,7 @@ const OFFER_OPTIONS = {
 const PC_CONFIG: RTCConfiguration = {
 	iceServers: [
 		{
-			urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302', 'stun:stun3.l.google.com:19302', 'stun:stun4.l.google.com:19302'],
+			urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'],
 		},
 	],
 };
@@ -193,6 +193,8 @@ function VideoCall({ id: roomId, session, video, stream }: { id: string; session
 
 			if (Object.keys(peersRef.current).length <= 1) {
 				router.push('/');
+				alert('Cuộc gọi đã kết thúc');
+        return
 			}
 
 			setRender((prev) => prev + 1);
@@ -221,6 +223,12 @@ function VideoCall({ id: roomId, session, video, stream }: { id: string; session
 			setIsConnected(false);
 		}
 
+		function onCallRejected() {
+			router.push('/');
+			socket.emit('leave-room', { room_id: roomId });
+			alert('Cuộc gọi bị từ chối');
+		}
+
 		socket.on('data', handleData);
 		socket.on('connect', onConnect);
 		socket.on('disconnect', onDisconnect);
@@ -228,6 +236,7 @@ function VideoCall({ id: roomId, session, video, stream }: { id: string; session
 		socket.on('user-connect', onUserConnect);
 		socket.on('user-disconnect', onUserDisconnect);
 		socket.on('user-list', onUserList);
+		socket.on('call-rejected', onCallRejected);
 
 		return () => {
 			socket.off('data', handleData);
@@ -237,6 +246,7 @@ function VideoCall({ id: roomId, session, video, stream }: { id: string; session
 			socket.off('user-connect', onUserConnect);
 			socket.off('user-disconnect', onUserDisconnect);
 			socket.off('user-list', onUserList);
+			socket.off('call-rejected', onCallRejected);
 		};
 	}, []);
 

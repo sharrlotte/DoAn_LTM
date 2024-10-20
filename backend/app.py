@@ -56,7 +56,7 @@ def apply_cors(response):
     response.headers["Access-Control-Allow-Credentials"] = "true"
     
     expires = timedelta(days=3)
-    access_token = create_access_token(identity="107272552114817473073", expires_delta=expires)
+    access_token = create_access_token(identity="117797862331024228737", expires_delta=expires)
 
     print("Access token Bearer",access_token)
     
@@ -70,6 +70,13 @@ def on_connect(auth):
 
     _user_id_to_sid[user_id] = sid
     _sid_to_user_id[sid] = user_id    
+
+@socketio.on("reject")
+def on_join_room(data):
+    room_id = data["room_id"]
+
+    emit("call-rejected", broadcast=True, room=room_id)
+
 
 @socketio.on("join-room")
 def on_join_room(data):
